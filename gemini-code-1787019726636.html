@@ -4,9 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>StudyBridge English Placement Test</title>
+
+<!-- Google Fonts: Space Mono & Inter -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+<!-- Canvas Confetti Library -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <style>
 body {
@@ -123,10 +128,10 @@ button:disabled {
 
 .score {
   text-align: center;
-  font-size: 64px;
+  font-size: 72px;
   font-weight: 900;
   font-family: 'Space Mono', monospace;
-  margin: 10px 0;
+  margin: 5px 0;
 }
 
 .badge {
@@ -138,7 +143,7 @@ button:disabled {
   margin-bottom: 20px;
 }
 
-/* Score & Badge Colors */
+/* Specific Score Colors */
 .score-red { color: #dc2626; }
 .badge-red { background: #fee2e2; color: #991b1b; }
 
@@ -165,6 +170,36 @@ button:disabled {
   border: 1px solid #e2e8f0;
   padding: 16px;
   border-radius: 12px;
+}
+
+.celebration {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+
+.avg-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.avg-table th, .avg-table td {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.avg-table th {
+  background: #f1f5f9;
+}
+
+.avg-table tr.highlight {
+  background: #e2e8f0;
+  font-weight: 700;
 }
 
 .small {
@@ -256,7 +291,7 @@ const Q=[
 ];
 
 let age, grade, district, target=550, current, answers=[], used=new Set();
-const gradeAvg={K:80,1:100,2:182,3:264,4:345,5:427,6:509,7:591,8:673,9:755,10:836,11:918,12:1000};
+const gradeAvg={K:80, 1:100, 2:182, 3:264, 4:345, 5:427, 6:509, 7:591, 8:673, 9:755, 10:836, 11:918, 12:1000};
 
 function startTest(){
   age=+document.getElementById('age').value;
@@ -304,40 +339,66 @@ function answer(){
 
 function band(s,a){
   let d=s-a;
-  if(d<-220)return['red','Needs significant support (Terrible score)'];
-  if(d<-80)return['orange','Below the expected range (Bad score)'];
-  if(d<100)return['yellow','Around the expected range (Below average)'];
-  if(d<220)return['green','Around average / above average (Average)'];
-  return['blue','Advanced'];
+  if(d < -220) return ['red', 'Did Very Bad on the Test'];
+  if(d < -80)  return ['orange', 'Did Bad on the Test'];
+  if(d < 0)    return ['yellow', 'Did Slightly Under Average on the Test'];
+  if(d < 220)  return ['green', 'Did Average on the Test'];
+  return ['blue', 'Advanced'];
+}
+
+function triggerConfetti() {
+  if (typeof confetti === 'function') {
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+  }
 }
 
 function finish(){
   document.getElementById('test').classList.add('hidden');
   let score=Math.max(50,Math.min(1100,Math.round(target)));
-  let ga=gradeAvg[grade],ageGrade=Math.max(1,Math.min(12,Math.round(age-5))),aa=gradeAvg[ageGrade]||100;
-  let [colorKey,label]=band(score,ga);
+  let ga=gradeAvg[grade], ageGrade=Math.max(1,Math.min(12,Math.round(age-5))), aa=gradeAvg[ageGrade]||100;
+  let [colorKey, label]=band(score, ga);
   
+  // Trigger Confetti Animation
+  triggerConfetti();
+
   let pct=Math.max(1,Math.min(99,Math.round(50+40*Math.tanh((score-aa)/180))));
   let counts={};
   answers.forEach(x=>{if(!x.ok)counts[x.q[1]]=(counts[x.q[1]]||0)+1});
   let weak=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]).slice(0,3);
   let books=['Wonder — R. J. Palacio','The One and Only Ivan — Katherine Applegate','The Giver — Lois Lowry','The Outsiders — S. E. Hinton','A Wrinkle in Time — Madeleine L’Engle'];
-  
+
+  // Build Average Score Table for reference
+  let tableRows = Object.keys(gradeAvg).map(g => {
+    let name = g === 'K' ? 'Kindergarten' : 'Grade ' + g;
+    let isUserGrade = g === grade ? 'class="highlight"' : '';
+    return `<tr ${isUserGrade}><td>${name}</td><td>${gradeAvg[g]}</td></tr>`;
+  }).join('');
+
   document.getElementById('result').innerHTML=
-    '<h2>Your StudyBridge English Placement Result</h2>'+
+    '<div class="celebration">🎉 Good Job Finishing The Test! 🎉</div>'+
+    '<h2 style="text-align:center;">Your English Placement Result</h2>'+
     '<div class="score score-'+colorKey+'">'+score+'</div>'+
     '<div class="badge badge-'+colorKey+'">'+label+'</div>'+
     '<div class="grid">'+
-      '<div class="metric"><b>Average score for '+(grade==='K'?'Kindergarten':grade+'th grade')+'</b><br>'+ga+'</div>'+
-      '<div class="metric"><b>Estimated average for age '+age+'</b><br>'+aa+'</div>'+
-      '<div class="metric"><b>Estimated percentile</b><br>'+pct+'th percentile</div>'+
-      '<div class="metric"><b>Questions completed</b><br>'+answers.length+'</div>'+
+      '<div class="metric"><b>Average Score for Your Grade ('+(grade==='K'?'Kindergarten':grade+'th Grade')+')</b><br>'+ga+'</div>'+
+      '<div class="metric"><b>Estimated Average for Age '+age+'</b><br>'+aa+'</div>'+
+      '<div class="metric"><b>Estimated Percentile</b><br>'+pct+'th percentile</div>'+
+      '<div class="metric"><b>Questions Completed</b><br>'+answers.length+'</div>'+
     '</div>'+
-    '<h3>What to work on</h3>'+
-    '<p>'+(weak.length?weak.map(x=>'• '+x).join('<br>'):'Keep practicing across all areas.')+'</p>'+
-    '<h3>Recommended books</h3>'+
+    '<h3>What to Work On</h3>'+
+    '<p>'+(weak.length?weak.map(x=>'• '+x).join('<br>'):'Great performance! Keep practicing across all areas to stay sharp.')+'</p>'+
+    '<h3>Recommended Books</h3>'+
     '<ol>'+books.map(x=>'<li>'+x+'</li>').join('')+'</ol>'+
-    '<p class="small"><b>Prototype note:</b> The age/grade averages and percentile are sample StudyBridge reference values, not nationally normed scores. Before using this for real placement, StudyBridge should pilot the test with a representative student sample and statistically norm the scale.</p>';
+    '<h3>Average Score Reference Table (All Grades)</h3>'+
+    '<table class="avg-table">'+
+      '<thead><tr><th>Grade</th><th>Average Score</th></tr></thead>'+
+      '<tbody>'+tableRows+'</tbody>'+
+    '</table>'+
+    '<p class="small" style="margin-top:20px;"><b>Prototype note:</b> The grade averages and percentiles are sample StudyBridge reference values, not nationally normed scores.</p>';
   
   document.getElementById('result').classList.remove('hidden');
 }
